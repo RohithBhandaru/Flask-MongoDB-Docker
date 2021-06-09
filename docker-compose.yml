@@ -1,0 +1,75 @@
+version: '3'
+services:
+
+  flask:
+    build:
+      context: app
+      dockerfile: Dockerfile
+    container_name: flask-server-gs
+    restart: unless-stopped
+    environment:
+      APP_ENV: "prod"
+      APP_DEBUG: "False"
+      APP_PORT: 5000
+      MONGODB_DATABASE: flaskdb
+      MONGODB_USERNAME: flaskusr_gs
+      MONGODB_PASSWORD: "GS2020"
+      MONGODB_HOSTNAME: mongodb
+    volumes:
+      - appdata:/var/www
+    depends_on:
+      - mongodb
+    networks:
+      - frontend
+      - backend
+
+  mongodb:
+    image: mongo:4.0.8
+    container_name: mongo-server-gs
+    restart: unless-stopped
+    command: mongod --auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: mongoroot_gs
+      MONGO_INITDB_ROOT_PASSWORD: "GSRoot2020"
+      MONGO_INITDB_DATABASE: flaskdb
+      MONGODB_DATA_DIR: /data/db
+      MONDODB_LOG_DIR: /dev/null
+    volumes:
+      - mongodbdata:/data/db
+    networks:
+      - backend
+
+  webserver:
+    build:
+      context: nginx
+      dockerfile: Dockerfile
+    container_name: web-server-gs
+    restart: unless-stopped
+    environment:
+      APP_ENV: "prod"
+      APP_NAME: "webserver"
+      APP_DEBUG: "true"
+      SERVICE_NAME: "webserver"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginxdata:/var/log/nginx
+    depends_on:
+      - flask
+    networks:
+      - frontend
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+volumes:
+  mongodbdata:
+    driver: local
+  appdata:
+    driver: local
+  nginxdata:
+    driver: local
